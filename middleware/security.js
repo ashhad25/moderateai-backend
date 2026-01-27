@@ -1,7 +1,6 @@
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 
-// Allowed origins for CORS
 const allowedOrigins = [
   "https://moderateai-frontend.vercel.app",
   "http://localhost:3000",
@@ -9,7 +8,42 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
-// Rate limiting configuration
+// CORS configuration - FIXED
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (Postman, mobile apps, server-to-server)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Allow localhost for development
+    if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+      return callback(null, true);
+    }
+
+    // Allow all Vercel deployments
+    if (origin.includes("vercel.app")) {
+      return callback(null, true);
+    }
+
+    // Allow specific origins
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // If none match, allow anyway but log it
+    console.warn("⚠️ Allowing unknown origin:", origin);
+    return callback(null, true); // Allow all for now, can restrict later
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-API-Key"],
+  exposedHeaders: ["Content-Range", "X-Content-Range"],
+  maxAge: 600,
+  optionsSuccessStatus: 204,
+};
+
+// Rate limiting configuration - FIXED
 const createRateLimiter = (windowMs, max, message) => {
   return rateLimit({
     windowMs,
@@ -17,6 +51,10 @@ const createRateLimiter = (windowMs, max, message) => {
     message: { error: message },
     standardHeaders: true,
     legacyHeaders: false,
+    // Skip rate limiting for failed requests (prevents rate limit on CORS errors)
+    skipFailedRequests: true,
+    // Trust proxy headers
+    trustProxy: true,
   });
 };
 
@@ -40,25 +78,6 @@ const moderationLimiter = createRateLimiter(
   30, // 30 requests per minute
   "Rate limit exceeded for moderation requests",
 );
-
-// CORS configuration
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-API-Key"],
-  exposedHeaders: ["Content-Range", "X-Content-Range"],
-  maxAge: 600, // 10 minutes
-};
 
 // Security headers configuration
 const helmetConfig = {

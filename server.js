@@ -22,6 +22,9 @@ const {
 
 const app = express();
 
+// ==================== TRUST PROXY (MUST BE FIRST) ====================
+app.set("trust proxy", 1); // Required for Railway, Heroku, etc.
+
 // ==================== SECURITY MIDDLEWARE (MUST BE FIRST) ====================
 app.use(helmet(helmetConfig));
 app.use(cors(corsOptions));
