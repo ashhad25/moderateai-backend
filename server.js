@@ -54,7 +54,8 @@ pool.on("error", (err) => {
 });
 
 // ML Service URL
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:8000";
+const ML_SERVICE_URL =
+  process.env.ML_SERVICE_URL || "https://moderateai-ml.onrender.com/";
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // Validate JWT_SECRET exists
